@@ -1,8 +1,10 @@
  # my-tomcat-image — Tomcat + PSI Probe (Docker + Helm)
 
 A small repository containing a Docker image build for Apache Tomcat (with PSI Probe) and a Helm chart to deploy it to Kubernetes (examples for UAT and PROD).
+
 note: don't forget to add probe.war file in the same directory as the Dockerfile
 
+![alt text](https://github.com/Qusaihija/tomcat-prob-psi-chart/blob/main/image.png?raw=true)
 ## Repository layout
 
 - `my-tomcat-image/` — Docker image build context
