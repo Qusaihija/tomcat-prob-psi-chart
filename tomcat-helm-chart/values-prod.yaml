@@ -1,0 +1,35 @@
+# PROD Environment specific values
+global:
+  environment: prod
+
+serviceAccount:
+  create: false
+  name: ""
+
+deployment:
+  replicaCount: 2
+
+envConfig:
+  javaOpts: "-Xms1024m -Xmx2048m -Djava.security.egd=file:/dev/./urandom -Denv=prod"
+  dbConnection: "jdbc:mysql://prod-db:3306/app_prod"
+  envType: "PROD"
+
+resources:
+  requests:
+    memory: "1024Mi"
+    cpu: "500m"
+  limits:
+    memory: "2048Mi"
+    cpu: "1000m"
+
+tomcatUsers:
+  username: "prod_admin"
+  password: "prod_secure_password_456"
+  roles: "manager-gui,admin-gui,manager-script"
+
+database:
+  username: "prod_user"
+  password: "prod_secure_dbpass_456"
+  url: "jdbc:mysql://prod-db:3306/app_prod"
+
+imagePullSecrets: []

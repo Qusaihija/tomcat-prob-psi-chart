@@ -1,0 +1,52 @@
+# Default values for tomcat-helm-chart
+global:
+  environment: uat
+
+image:
+  repository: 0xnef/tomcat_off:1.0
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: false
+  name: ""
+
+deployment:
+  replicaCount: 1
+  containerPort: 8080
+  
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+envConfig:
+  javaOpts: "-Xms512m -Xmx1024m -Djava.security.egd=file:/dev/./urandom"
+  dbConnection: "jdbc:mysql://localhost:3306/mydb"
+  envType: "UAT"
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1024Mi"
+    cpu: "500m"
+
+probe:
+  path: "/prob"
+  sslEnabled: true
+  sslPort: 8443
+
+# Tomcat Users Configuration
+tomcatUsers:
+  username: "admin"
+  password: "admin123"
+  roles: "manager-gui,admin-gui,manager-script"
+
+# Database Secrets
+database:
+  username: "dbuser"
+  password: "dbpassword123"
+  url: "jdbc:mysql://localhost:3306/mydb"
+
+imagePullSecrets: []

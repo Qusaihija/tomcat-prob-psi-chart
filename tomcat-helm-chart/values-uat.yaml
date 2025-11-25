@@ -1,0 +1,35 @@
+# UAT Environment specific values
+global:
+  environment: uat
+
+serviceAccount:
+  create: false
+  name: ""
+
+deployment:
+  replicaCount: 1
+
+envConfig:
+  javaOpts: "-Xms512m -Xmx1024m -Djava.security.egd=file:/dev/./urandom -Denv=uat"
+  dbConnection: "jdbc:mysql://uat-db:3306/app_uat"
+  envType: "UAT"
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1024Mi"
+    cpu: "500m"
+
+tomcatUsers:
+  username: "uat_admin"
+  password: "uat_password123"
+  roles: "manager-gui,admin-gui,manager-script"
+
+database:
+  username: "uat_user"
+  password: "uat_dbpass123"
+  url: "jdbc:mysql://uat-db:3306/app_uat"
+
+imagePullSecrets: []

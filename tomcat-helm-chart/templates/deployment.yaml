@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tomcat-helm-chart.fullname" . }}
+  labels:
+    {{- include "tomcat-helm-chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tomcat-helm-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tomcat-helm-chart.selectorLabels" . | nindent 8 }}
+        environment: {{ .Values.global.environment }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap-serverxml.yaml") . | sha256sum }}
+        checksum/users: {{ include (print $.Template.BasePath "/configmap-tomcat-users.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.deployment.containerPort }}
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          env:
+            # REMOVED JAVA_HOME - Tomcat image already sets it correctly
+            - name: JAVA_OPTS
+              value: {{ .Values.envConfig.javaOpts }}
+            - name: DB_CONNECTION
+              value: {{ .Values.envConfig.dbConnection }}
+            - name: ENV_TYPE
+              value: {{ .Values.envConfig.envType }}
+            - name: CATALINA_OPTS
+              value: {{ .Values.envConfig.javaOpts }}
+            - name: TOMCAT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tomcat-helm-chart.fullname" . }}-credentials
+                  key: tomcat-username
+            - name: TOMCAT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tomcat-helm-chart.fullname" . }}-credentials
+                  key: tomcat-password
+            {{- if .Values.database }}
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tomcat-helm-chart.fullname" . }}-credentials
+                  key: db-username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tomcat-helm-chart.fullname" . }}-credentials
+                  key: db-password
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tomcat-helm-chart.fullname" . }}-credentials
+                  key: db-url
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tomcat-users-config
+              mountPath: /usr/local/tomcat/conf/tomcat-users.xml
+              subPath: tomcat-users.xml
+              readOnly: true
+            - name: server-xml-config
+              mountPath: /usr/local/tomcat/conf/server.xml
+              subPath: server.xml
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+            successThreshold: 1
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      volumes:
+        - name: tomcat-users-config
+          configMap:
+            name: {{ include "tomcat-helm-chart.fullname" . }}-tomcat-users
+            items:
+              - key: tomcat-users.xml
+                path: tomcat-users.xml
+                mode: 0644
+        - name: server-xml-config
+          configMap:
+            name: {{ include "tomcat-helm-chart.fullname" . }}-serverxml
+            items:
+              - key: server.xml
+                path: server.xml
+                mode: 0644
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "tomcat-helm-chart.serviceAccountName" . }}
+      {{- end }}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 60
